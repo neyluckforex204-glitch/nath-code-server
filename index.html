@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="sw">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#071b2b">
+<title>NATH-CODE | Intelligence Platform</title>
+<style>
+:root{color-scheme:dark;--bg:#071522;--panel:#102638;--line:#24465b;--muted:#9bb2c1;--green:#24d18b;--cyan:#62c8ff}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#06121e,#0a2638);font:16px system-ui,Arial;color:#eef8ff}
+main{max-width:760px;margin:auto;padding:22px 15px 45px}.brand{font-size:27px;font-weight:900;letter-spacing:2px}.sub{color:var(--muted);font-size:13px;margin-top:2px}
+.panel{background:#102638eF;border:1px solid var(--line);border-radius:18px;padding:17px;margin-top:16px;box-shadow:0 10px 30px #0003}
+h2{font-size:17px;margin:0 0 12px}.muted{color:var(--muted);font-size:13px;line-height:1.5}
+textarea,input{width:100%;background:#071b2b;color:white;border:1px solid #31556b;border-radius:11px;padding:12px;font:inherit}
+textarea{min-height:94px;resize:vertical}.btn{border:0;border-radius:11px;padding:12px 15px;background:var(--green);color:#052116;font-weight:800;font-size:14px;cursor:pointer}
+.btn.secondary{background:#1a4058;color:#eaf8ff;border:1px solid #39647d}.btn:disabled{opacity:.5}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}.stat{background:#071b2b;border:1px solid #24465b;padding:12px;border-radius:12px}.stat b{display:block;font-size:20px}.stat small{color:var(--muted)}
+.odds{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.chip{background:#183b50;border:1px solid #315a70;border-radius:30px;padding:6px 10px;font-size:13px}
+.range{font-size:clamp(28px,7vw,42px);font-weight:900;color:var(--green);letter-spacing:.3px}.hidden{display:none}.warn{color:#ffd28b}.good{color:var(--green)}
+#status{margin-top:9px;color:var(--cyan);font-size:13px}footer{color:var(--muted);font-size:12px;text-align:center;margin:20px 5px}
+
+.betgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.betgrid>*{min-width:0}select{width:100%;background:#071b2b;color:white;border:1px solid #31556b;border-radius:11px;padding:12px;font:inherit}.leg{background:#071b2b;border:1px solid #24465b;border-radius:12px;padding:10px;margin:8px 0}.leg strong{color:#62c8ff}.metric{font-size:22px;font-weight:900;color:#24d18b}.pill{display:inline-block;background:#183b50;border:1px solid #315a70;border-radius:20px;padding:4px 9px;margin:3px;font-size:12px}
+@media(max-width:520px){.betgrid{grid-template-columns:1fr}}
+
+/* Floating Play Mode */
+.playbar{display:flex;gap:8px;flex-wrap:wrap}.playbar .btn{flex:1;min-width:125px}
+#playFrame{width:100%;height:48vh;min-height:300px;border:1px solid #31556b;border-radius:12px;background:#fff}
+.play-frame-wrap{background:#071b2b;padding:8px;border:1px solid #24465b;border-radius:14px}
+.play-note{padding:10px;border-radius:10px;background:#182f3e;color:#c8dbe7;font-size:12px;line-height:1.5}
+@media(max-width:520px){#playFrame{height:42vh;min-height:260px}}
+
+/* Floating in-app overlay: bookmaker opens above the current NATH-CODE screen */
+#floatingOverlay{position:fixed;inset:0;z-index:9999;background:#020914d9;backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;padding:12px}
+#floatingOverlay.open{display:flex}
+#floatingOverlay .float-card{width:min(100%,980px);height:min(88vh,900px);background:#0b1e2d;border:1px solid #39708c;border-radius:18px;box-shadow:0 20px 70px #000b;display:flex;flex-direction:column;overflow:hidden}
+#floatingOverlay .float-head{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;background:#102b40;border-bottom:1px solid #31556b}
+#floatingOverlay .float-head strong{font-size:13px;letter-spacing:.5px}
+#floatingOverlay .float-actions{display:flex;gap:6px;flex-wrap:wrap}
+#floatingOverlay .float-actions button{padding:8px 10px;font-size:12px}
+#floatingOverlay #playFrameWrap{display:block!important;flex:1;min-height:0;margin:0!important;padding:8px;border:0;border-radius:0;display:flex;flex-direction:column}
+#floatingOverlay #playFrame{height:100%;min-height:0;flex:1}
+#floatingOverlay #playFrameStatus{flex:none}
+@media(max-width:520px){#floatingOverlay{padding:0}#floatingOverlay .float-card{height:88vh;border-radius:18px 18px 0 0}#floatingOverlay #playFrame{height:100%;min-height:0}}
+/* NATH-CODE v1.8 professional app shell */
+:root{--bg:#071321;--panel:#0e2234;--line:#203d54;--muted:#91a9ba;--green:#35d6a0;--cyan:#66d5ff;--gold:#eacb83}
+body{background:radial-gradient(ellipse at 80% -10%,#16405a 0,transparent 38%),#06111d;font-family:Inter,system-ui,Arial,sans-serif;color:#eef7ff}
+main{max-width:1240px;padding:18px 20px 42px;display:grid;grid-template-columns:220px minmax(0,1fr);gap:20px;align-items:start}
+header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:10px 4px 16px;border-bottom:1px solid #1c394e}
+.brand{font-size:25px;letter-spacing:2.5px}.brand:before{content:'NC';display:inline-grid;place-items:center;width:42px;height:42px;margin-right:11px;border:2px solid #5fcfff;border-radius:13px;color:#e9d49a;font-size:17px;vertical-align:middle;box-shadow:0 0 18px #43bfff44}
+.sub{font-size:11px;letter-spacing:1.2px}
+.app-nav{grid-column:1;grid-row:2;position:sticky;top:14px;display:flex;flex-direction:column;gap:7px;padding:12px;background:#0b1d2ceF;border:1px solid #1e3b50;border-radius:18px}
+.nav-title{color:#7996aa;font-size:10px;letter-spacing:1.5px;padding:8px 10px 4px;font-weight:800}
+.nav-btn{width:100%;text-align:left;border:1px solid transparent;border-radius:11px;padding:12px 13px;background:transparent;color:#c5d7e4;font-weight:700;cursor:pointer;font-size:13px}
+.nav-btn:before{content:attr(data-icon);display:inline-block;width:25px;color:#72d7ff}.nav-btn.active{background:linear-gradient(100deg,#123b52,#102a3c);border-color:#2c617e;color:#fff;box-shadow:inset 3px 0 #43d6b0}
+#appContent{grid-column:2;grid-row:2;min-width:0}.panel{background:linear-gradient(145deg,#10283b,#0b1e2d);border:1px solid #1d4058;border-radius:17px;padding:20px;margin:0 0 15px;box-shadow:0 12px 34px #0003}
+.panel h2{font-size:16px;letter-spacing:.3px}.panel[data-page]{display:none}.panel.page-visible{display:block}
+#homeDashboard{display:block}.welcome{padding:23px;border-radius:18px;background:linear-gradient(115deg,#123b52,#10253a 65%,#1b2e3a);border:1px solid #2c5b73;margin-bottom:15px}.welcome h1{font-size:25px;margin:0 0 7px}.welcome p{color:#a9c1d0;margin:0;font-size:13px}
+.home-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.home-tile{background:#0e2537;border:1px solid #21465e;border-radius:16px;padding:18px;cursor:pointer;text-align:left;color:#eef8ff}.home-tile b{display:block;font-size:15px;margin:9px 0 5px}.home-tile small{color:#9ab2c2;line-height:1.45}.tile-icon{font-size:23px}
+.stats{gap:10px}.stat{background:#081a29;border:1px solid #1d4057;border-radius:13px}.btn{background:linear-gradient(110deg,#34d7a0,#63d9c4);color:#04251d}.btn.secondary{background:#17384e;color:#dff3ff;border-color:#2b536b}
+#mathReport{display:none!important}#cpuBadge{font-size:11px;color:#77d9bc;border:1px solid #28634f;border-radius:20px;padding:6px 10px}
+#systemLog .log-list{display:flex;flex-direction:column;gap:7px;max-height:430px;overflow:auto}.log-entry{display:grid;grid-template-columns:145px 90px 1fr;gap:10px;padding:10px 12px;background:#081a29;border:1px solid #1c3a50;border-radius:10px;font-size:12px}.log-entry time{color:#88a7ba}.log-entry strong{color:#71d6ff}.log-empty{color:#9bb2c1;padding:18px;text-align:center}
+#systemLog .actions{margin:12px 0}.log-note{font-size:12px;color:#8fa9ba}
+#appContent footer{margin-top:20px}
+@media(max-width:760px){main{display:block;padding:12px 12px 90px}header{padding:8px 3px 12px}.app-nav{position:fixed;z-index:50;left:9px;right:9px;bottom:8px;top:auto;display:flex;flex-direction:row;justify-content:space-around;gap:2px;padding:6px;border-radius:16px;background:#081a29f2;backdrop-filter:blur(14px);box-shadow:0 8px 30px #0008}.nav-title{display:none}.nav-btn{font-size:10px;text-align:center;padding:9px 3px;flex:1}.nav-btn:before{display:block;width:auto;font-size:17px;margin-bottom:3px}.home-grid{grid-template-columns:1fr 1fr}.log-entry{grid-template-columns:1fr;gap:3px}}
+@media(max-width:390px){.home-grid{grid-template-columns:1fr}.brand{font-size:21px}}
+
+
+/* NATH-CODE v2.0 — premium visual system */
+:root{--bg:#070b16;--panel:#101827;--line:#26364d;--muted:#91a0b7;--green:#54e0b1;--cyan:#72baff;--gold:#c7a7ff;--accent:#6d8cff;--surface:#0d1524}
+html{background:#070b16;scroll-behavior:smooth}body{background:radial-gradient(900px 500px at 90% -10%,#243c73 0%,transparent 58%),radial-gradient(700px 500px at -15% 40%,#102c42 0%,transparent 58%),#070b16;color:#f4f7ff;letter-spacing:.1px}
+main{max-width:1440px;grid-template-columns:248px minmax(0,1fr);gap:22px;padding:22px 26px 48px}
+header{padding:8px 4px 20px;border-bottom:1px solid #26334a}
+.brand{font-size:24px;font-weight:900;letter-spacing:2px}.brand:before{content:'N';width:44px;height:44px;border:1px solid #6d8cff;border-radius:15px;background:linear-gradient(145deg,#243b70,#101a30);color:#9edcff;box-shadow:0 0 28px #628cff33}
+.sub{color:#8292ad;font-size:10px;letter-spacing:1.4px}
+.app-nav{background:rgba(13,21,36,.86);border:1px solid #26364d;border-radius:22px;padding:13px;gap:6px;box-shadow:0 18px 50px #0003;backdrop-filter:blur(18px)}
+.nav-title{padding:10px 12px;color:#71829e}.nav-btn{padding:13px 14px;border-radius:13px;color:#aebbd0;font-size:13px;transition:.2s}.nav-btn:before{width:30px;font-size:16px}.nav-btn:hover{background:#17243a;color:#fff}.nav-btn.active{background:linear-gradient(105deg,#233c70,#182a49);border:1px solid #3e5e9b;box-shadow:inset 3px 0 #7aa7ff,0 8px 24px #263d7028}
+#appContent{min-width:0}.panel{background:linear-gradient(145deg,rgba(17,27,45,.97),rgba(11,19,33,.98));border:1px solid #293952;border-radius:21px;padding:22px;box-shadow:0 16px 45px #0003;margin-bottom:17px}
+.panel h2{font-size:15px;font-weight:800;letter-spacing:.5px;color:#eaf0ff}.welcome{position:relative;overflow:hidden;padding:28px;border-radius:23px;background:linear-gradient(115deg,#1b3159,#17233d 58%,#172b3b);border:1px solid #344e7d;box-shadow:0 20px 50px #0003;margin-bottom:18px}.welcome:after{content:'✦';position:absolute;right:35px;top:8px;font-size:110px;color:#9dbaff12}.welcome h1{font-size:clamp(24px,3vw,34px);letter-spacing:-.7px}.welcome p{color:#b1bfd6;font-size:13px}
+#cpuBadge{background:#112e30;color:#76e4c0;border-color:#28645b;padding:8px 12px}
+.stats{gap:12px}.stat{background:linear-gradient(145deg,#111f33,#0c1727);border:1px solid #2a3b54;border-radius:16px;padding:15px}.stat b{font-size:23px;letter-spacing:-.5px}.stat small{color:#8fa0ba;font-size:11px}
+.home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.home-tile{position:relative;min-height:126px;padding:20px;background:linear-gradient(145deg,#14233a,#0e192a);border:1px solid #2b3d58;border-radius:19px;transition:transform .2s,border-color .2s,box-shadow .2s}.home-tile:hover{transform:translateY(-3px);border-color:#6486d4;box-shadow:0 14px 32px #0004}.home-tile b{font-size:15px;margin:12px 0 0}.home-tile small{display:none}.tile-icon{display:inline-grid;place-items:center;width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#273e70,#182b49);font-size:21px}
+input,textarea,select{background:#0a1423;border:1px solid #30425d;border-radius:13px;color:#f4f7ff;padding:13px}input:focus,textarea:focus,select:focus{outline:2px solid #648bdf55;border-color:#7195e8}
+.btn{border-radius:13px;padding:12px 17px;background:linear-gradient(110deg,#65e2bb,#55b9d8);box-shadow:0 7px 20px #4dd7b022}.btn.secondary{background:#1a2a43;color:#dce8ff;border:1px solid #344d70;box-shadow:none}.chip,.pill{background:#182a45;border-color:#344b70}.range,.metric{color:#72e4bd}
+#floatingOverlay .float-card{background:#0c1525;border:1px solid #435d91;border-radius:22px}#floatingOverlay .float-head{background:#14233b;border-color:#2a3d5e}
+#playFrameWrap,.play-frame-wrap{background:#0a1423;border-color:#2a3b55}.play-note{background:#14233b;color:#aebdd4}
+#systemLog .log-list{gap:9px}.log-entry{background:#0c1727;border-color:#263851;border-radius:13px;padding:12px 14px}
+footer{color:#65758f;font-size:11px}
+@media(max-width:760px){main{display:block;padding:12px 12px 100px}header{padding:8px 3px 14px}.brand{font-size:21px}.sub{max-width:125px;text-align:right;line-height:1.5}.app-nav{left:10px;right:10px;bottom:10px;padding:7px;border-radius:19px;background:rgba(10,18,31,.94);border:1px solid #33445f;backdrop-filter:blur(20px)}.nav-btn{font-size:10px;padding:8px 2px;border-radius:12px}.nav-btn:before{font-size:17px;margin-bottom:4px}.home-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.home-tile{min-height:112px;padding:14px}.welcome{padding:21px}.panel{padding:17px;border-radius:18px}.stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}.stat{padding:11px 9px}.stat b{font-size:18px}.stat small{font-size:10px}}
+@media(max-width:390px){.home-grid{grid-template-columns:1fr 1fr}.home-tile b{font-size:13px}.stats{grid-template-columns:1fr 1fr}.stats .stat:last-child{grid-column:1/-1}}
+
+</style>
+</head>
+<body><main>
+<header><div class="brand">NATH-CODE</div><div class="sub">AVIATOR ANALYZER · ONLINE-READY ENGINE v1.7 · FLOATING PLAY MODE</div></header>
+
+<section class="panel" id="internetPanel">
+<h2>INTERNET & SERVER CONNECTION</h2>
+<div class="stats">
+ <div class="stat"><b id="netStatus">Inakaguliwa...</b><small>Internet status</small></div>
+ <div class="stat"><b id="apiStatus">Haijaunganishwa</b><small>NATH-CODE API</small></div>
+ <div class="stat"><b id="lastSync">—</b><small>Last sync</small></div>
+</div>
+<p class="muted" style="margin-top:10px">Internet connection huwezesha huduma za mtandaoni. Ili kuhifadhi na kupata historia kwenye vifaa tofauti, unahitaji API/server yako.</p>
+<label class="muted" for="apiBase">SERVER API URL</label>
+<input id="apiBase" type="url" placeholder="https://your-server.example.com" autocomplete="url">
+<div class="actions">
+ <button class="btn secondary" id="checkInternet" type="button">ANGALIA INTERNET</button>
+ <button class="btn" id="connectApi" type="button">UNGANISHA SERVER</button>
+ <button class="btn secondary" id="syncNow" type="button" disabled>SYNC HISTORIA</button>
+</div>
+<div id="networkMessage" class="muted" aria-live="polite" style="margin-top:10px">Inasubiri ukaguzi wa muunganisho.</div>
+<p class="muted warn">Usiweke API secret key hapa. Server inapaswa kutumia HTTPS, authentication salama na CORS kuruhusu domain ya NATH-CODE. Bila API halisi, mfumo hautadai kuwa ume-sync data.</p>
+<div class="bio-card" style="margin-top:22px;padding-top:20px;border-top:1px solid #293952">
+ <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+  <div style="width:48px;height:48px;display:grid;place-items:center;border-radius:16px;background:linear-gradient(145deg,#283f70,#172842);font-size:24px">⌁</div>
+  <div style="flex:1;min-width:170px"><h2 style="margin:0 0 5px">Biometric security</h2><div class="muted">Fingerprint / Face ID</div></div>
+  <span id="bioSupport" class="pill">Checking device…</span>
+ </div>
+ <div class="actions"><button class="btn secondary" id="bioSetup" type="button">SET UP BIOMETRICS</button></div>
+ <div id="bioMessage" class="muted" role="status" style="margin-top:9px">Tumia alama ya kidole au utambuzi wa uso kuingia kwa usalama baada ya kusanidi akaunti.</div>
+</div>
+
+</section>
+
+<section class="panel">
+<h2>1. Ingiza odds zilizopita</h2>
+<p class="muted">Andika multipliers kwa kutenganisha kwa nafasi, koma au mstari mpya. Mfumo unakubali odds zenye decimal zote, ikiwemo thamani zisizo shufwa kama 1.35x, 2.75x au 7.91x. Mfano: 1.20x, 2.50x, 1.05x, 4.80x</p>
+<textarea id="manual" placeholder="1.20x, 2.50x, 1.05x, 4.80x"></textarea>
+<div class="actions"><button class="btn" id="add">ONGEZA ODDS</button><button class="btn secondary" id="clear">FUTA HISTORIA</button></div>
+</section>
+
+<section class="panel">
+<h2>2. Piga picha au chagua screenshot</h2>
+<p class="muted">Piga picha ya historia ya rounds au chagua picha kutoka Gallery. Ruhusu kamera ikikuuliza. OCR inaweza kukosea; kagua namba kabla ya kuziongeza.</p>
+<div class="actions">
+<label class="btn secondary" for="camera">📷 PIGA PICHA</label>
+<label class="btn secondary" for="gallery">🖼️ GALLERY</label>
+<input class="hidden" id="camera" type="file" accept="image/*" capture="environment">
+<input class="hidden" id="gallery" type="file" accept="image/*">
+</div>
+<div id="previewWrap" class="hidden" style="margin-top:12px"><img id="preview" alt="Picha uliyochagua" style="max-width:100%;max-height:260px;border-radius:12px;border:1px solid #31556b"><div class="actions"><button class="btn secondary" id="removeImage" type="button">ONDOA PICHA</button></div></div>
+<div id="status" aria-live="polite"></div>
+<div class="actions"><button class="btn" id="scan" disabled>SOMA PICHA (OCR)</button><button class="btn secondary" id="addOcr" disabled>ONGEZA ODDS ZILIZOSOMWA</button></div>
+<textarea id="ocrText" class="hidden" placeholder="Odds zilizosomeka zitaonekana hapa..."></textarea>
+</section>
+
+<section class="panel" id="betImporter">
+<h2>3. BET CODE IMPORTER · FOOTBALL</h2>
+<p class="muted">Chagua bookmaker na weka bet code. Kama bookmaker ana share link/API inayoruhusu, mfumo unaweza kujaribu kuifungua. Bet code pekee haiwezi kufunguliwa moja kwa moja bila huduma rasmi ya bookmaker.</p>
+<div class="betgrid">
+<label class="muted">BOOKMAKER
+<select id="bookmaker"><option>BetPawa</option><option>SportPesa</option><option>Betika</option><option>1xBet</option><option>M-Bet</option><option>sportbet</option><option>helabet</option><option>1win</option></select></label>
+<label class="muted">BET CODE / SHARE LINK
+<input id="betCode" placeholder="Bandika bet code au share link"></label>
+</div>
+<div class="actions"><button class="btn" id="tryImport">INGIZA BET CODE</button><button class="btn secondary" id="clearSlip">FUTA MKeka</button></div>
+<div id="importStatus" class="muted" aria-live="polite" style="margin-top:10px">Tayari kupokea bet code.</div>
+<div class="divider" style="height:1px;background:#24465b;margin:16px 0"></div>
+<h2>Njia mbadala: picha au maandishi ya mkeka</h2>
+<p class="muted">Pakia screenshot ya mkeka au bandika maandishi yaliyoshirikishwa. OCR itasoma maandishi na odds; hakiki kila chaguo kabla ya uchambuzi.</p>
+<div class="actions"><label class="btn secondary" for="slipImage">🖼️ PAKIA SCREENSHOT</label><input class="hidden" id="slipImage" type="file" accept="image/*"></div>
+<textarea id="slipText" placeholder="Bandika hapa mechi, market na odds...
+Mfano: Team A vs Team B - Over 2.5 - 1.85"></textarea>
+<div class="actions"><button class="btn secondary" id="readSlipImage">SOMA SCREENSHOT (OCR)</button><button class="btn" id="analyzeSlip">CHAMBUA MKeka</button></div>
+<div id="slipReport" style="margin-top:12px"></div>
+<p class="muted warn">Uwezekano unaokadiriwa kutoka odds ni implied probability, si utabiri wa uhakika. Uchambuzi wa mechi unahitaji takwimu za timu na taarifa za sasa; usichukulie mkeka kuwa salama au uhakika wa kushinda.</p>
+</section>
+
+<section class="panel">
+<h2>4. Historia iliyokusanywa</h2>
+<div class="stats">
+<div class="stat"><b id="count">0</b><small>Rounds</small></div>
+<div class="stat"><b id="average">—</b><small>Wastani</small></div>
+<div class="stat"><b id="median">—</b><small>Median</small></div>
+</div>
+<div id="odds" class="odds"></div>
+<div class="actions"><button class="btn" id="analyze">CHAMBUA KWENYE SERVER</button><button class="btn secondary" id="export">PAKUA HISTORIA (CSV)</button></div>
+</section>
+
+<section class="panel" id="result">
+<h2>5. Possible next odds range</h2>
+<p class="muted">Weka mipaka ya range unayotaka server iangalie (si lazima). Server italinganisha range hii na takwimu za rounds ulizoingiza.</p>
+<div class="betgrid" style="margin-bottom:12px"><label class="muted">RANGE YA CHINI (x)<input id="rangeMinInput" type="number" min="1" step="0.01" placeholder="Mfano 1.20"></label><label class="muted">RANGE YA JUU (x)<input id="rangeMaxInput" type="number" min="1" step="0.01" placeholder="Mfano 5.00"></label></div>
+<div class="range" id="range">—</div>
+<p class="muted">Wide range (P10–P90); central range (P25–P75) huonyeshwa chini. Hakuna odds za odd zinazopaswa kuondolewa kwa sababu ya kuwa na decimal isiyo shufwa.</p>
+<p id="explain" class="muted">Weka angalau odds 10 ili kupata muhtasari wa takwimu.</p>
+<div class="stats" style="margin-top:12px">
+ <div class="stat"><b id="recentRange">—</b><small>Recent range (last 50)</small></div>
+ <div class="stat"><b id="trendState">—</b><small>Recent trend</small></div>
+ <div class="stat"><b id="sampleState">—</b><small>Data quality</small></div>
+</div>
+<div class="stats" style="margin-top:12px">
+<div class="stat"><b id="low">—</b><small>Lower band</small></div>
+<div class="stat"><b id="high">—</b><small>Upper band</small></div>
+<div class="stat"><b id="n">0</b><small>Data points</small></div>
+</div>
+<p class="muted warn">Tahadhari: Hii ni range ya kihistoria/statistical tu, si utabiri wa uhakika. Aviator rounds ni random; odds zilizopita haziwezi kuthibitisha odds inayofuata. Usitumie kama dhamana ya kubet.</p>
+</section>
+
+<section class="panel" id="mathReport">
+  <h2>6. Mathematical analysis report</h2>
+  <p class="muted">Mfumo huchambua hadi rounds 1,000 za mwisho. Probability hapa ni frequency ya data uliyoingiza; si dhamana ya round inayofuata.</p>
+  <div class="stats">
+    <div class="stat"><b id="stddev">—</b><small>Std. deviation</small></div>
+    <div class="stat"><b id="q10">—</b><small>10th percentile</small></div>
+    <div class="stat"><b id="q90">—</b><small>90th percentile</small></div>
+  </div>
+  <h2 style="margin-top:16px">Empirical probability</h2>
+  <div id="probabilityTable" class="muted">Bonyeza CHAMBUA NA TOA RANGE.</div>
+  <h2 style="margin-top:16px">Frequency distribution</h2>
+  <div id="frequencyTable" class="muted">Hakuna analysis bado.</div>
+  <h2 style="margin-top:16px">Theoretical reference (RTP assumption 97%)</h2>
+  <div id="theoryTable" class="muted">Hii ni reference ya kinadharia tu.</div>
+</section>
+
+<section class="panel" id="floatingPlay">
+<h2>7. FLOATING PLAY MODE · PLAY + ANALYZE</h2>
+<p class="muted">Fungua bookmaker au game kwenye mini browser pale tovuti inaporuhusu. NATH-CODE itabaki kwenye ukurasa huu ili uendelee kutumia uchambuzi.</p>
+<label class="muted" for="playSource">CHAGUA APP / CHANZO</label>
+<select id="playSource">
+<option value="https://www.betpawa.co.tz/">BetPawa Tanzania</option>
+<option value="https://www.sportpesa.co.tz/">SportPesa Tanzania</option>
+<option value="https://www.betika.com/">Betika</option>
+<option value="custom">Link nyingine / Aviator</option>
+</select>
+<div id="customPlayWrap" class="hidden" style="margin-top:9px"><label class="muted" for="customPlayUrl">WEKA LINK YA APP / GAME (HTTPS)</label><input id="customPlayUrl" type="url" placeholder="https://... "></div>
+<div class="playbar" style="margin-top:10px">
+<button class="btn" id="openMini" type="button">FUNGUA MINI BROWSER</button>
+<button class="btn secondary" id="openExternal" type="button">FUNGUA APP / TAB MPYA</button>
+<button class="btn secondary" id="closeMini" type="button">FUNGA DIRISHA</button>
+</div>
+<div class="play-frame-wrap" id="playFrameWrap" style="margin-top:12px;display:none">
+<div class="muted" id="playFrameStatus" style="margin:3px 4px 9px">Mini browser iko tayari.</div>
+<iframe id="playFrame" title="Bookmaker mini browser" referrerpolicy="strict-origin-when-cross-origin" allow="fullscreen; clipboard-read; clipboard-write" ></iframe>
+</div>
+<div class="play-note" style="margin-top:12px"><b>Ikiwa mini browser haitafunguka:</b> baadhi ya bookmaker huzuia kuonyeshwa ndani ya iframe kwa sababu za usalama. Bonyeza “Fungua App / Tab Mpya”. Kwenye Android, fungua Recent Apps, bonyeza alama ya app kisha chagua Split screen; weka NATH-CODE upande wa pili. Uwezo wa Split Screen hutegemea Android na app husika.</div>
+<p class="muted warn">NATH-CODE haiingilii akaunti, haihifadhi password, na haiwezi kubonyeza au kuweka bet kwa niaba yako. Ingia kwenye bookmaker moja kwa moja na hakikisha unaelewa masharti yake. Mini browser si njia ya kukwepa vizuizi vya app.</p>
+</section>
+
+<footer>NATH-CODE v2.1 · Unified Football + Aviator + Hybrid Brain + Server Analysis + Floating Overlay · System Log + local-first + Internet/API connection. Historia huhifadhiwa kwenye kifaa hiki; cloud sync inahitaji API/server halisi.</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+// INTERNET / API CONNECTION MANAGER (v1.6)
+let apiBase=(localStorage.getItem('nath_api_base')||window.location.origin).replace(/\/$/,'');
+if(!localStorage.getItem('nath_api_base'))localStorage.setItem('nath_api_base',apiBase);
+$('apiBase').value=apiBase;
+function setNet(text,color){$('netStatus').textContent=text;$('netStatus').style.color=color||'inherit';}
+function setApi(text,color){$('apiStatus').textContent=text;$('apiStatus').style.color=color||'inherit';}
+async function checkInternet(){
+ setNet('Inakaguliwa...','#62c8ff');$('networkMessage').textContent='Inajaribu kufikia huduma ya Internet...';
+ if(!navigator.onLine){setNet('Offline','#ffb36b');$('networkMessage').textContent='Kifaa kinaonyesha kuwa hakijaunganishwa na mtandao. Washa data/Wi-Fi.';return false;}
+ try{
+  // no-cors only verifies that a request can reach the public network; it does not read external data.
+  await fetch('https://www.cloudflare.com/cdn-cgi/trace',{mode:'no-cors',cache:'no-store'});
+  setNet('Online','#24d18b');$('networkMessage').textContent='Internet inapatikana. Hii haimaanishi kuwa live Aviator data au bookmaker API imeunganishwa.';return true;
+ }catch(e){setNet('Haijathibitishwa','#ffb36b');$('networkMessage').textContent='Internet haijathibitishwa. Angalia data/Wi-Fi au jaribu tena.';return false;}
+}
+function validApiUrl(value){try{const u=new URL(value);return (u.protocol==='https:'||(u.protocol==='http:'&&['localhost','127.0.0.1'].includes(u.hostname)))?u.href.replace(/\/$/,''):'';}catch(e){return '';}}
+async function connectApi(){
+ const base=validApiUrl($('apiBase').value.trim());
+ if(!base){setApi('URL si sahihi','#ffb36b');$('networkMessage').textContent='Weka URL sahihi ya server. Tumia HTTPS isipokuwa localhost.';return;}
+ apiBase=base;$('apiBase').value=base;localStorage.setItem('nath_api_base',base);
+ setApi('Inaunganisha...','#62c8ff');$('networkMessage').textContent='Inajaribu '+base+'/health';
+ try{
+  const response=await fetch(base+'/health',{method:'GET',headers:{'Accept':'application/json'},cache:'no-store'});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const data=await response.json().catch(()=>({}));
+  if(data.status && !['ok','healthy','online'].includes(String(data.status).toLowerCase()))throw new Error('Server health status: '+data.status);
+  setApi('Imeunganishwa','#24d18b');$('syncNow').disabled=false;$('networkMessage').textContent='Server imejibu. Unaweza kujaribu kusawazisha historia.';
+ }catch(e){setApi('Haijaunganishwa','#ffb36b');$('syncNow').disabled=true;$('networkMessage').textContent='Imeshindikana kuunganisha server: '+e.message+'. Hakikisha API ipo, /health inafanya kazi na CORS imeruhusu ukurasa huu.';}
+}
+async function syncHistory(){
+ if(!apiBase){$('networkMessage').textContent='Unganisha server kwanza.';return;}
+ $('syncNow').disabled=true;$('networkMessage').textContent='Inasawazisha historia...';
+ try{
+  const response=await fetch(apiBase+'/api/nath/history',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({odds:history.slice(-1000),updatedAt:new Date().toISOString()})});
+  if(!response.ok)throw new Error('HTTP '+response.status);
+  const result=await response.json().catch(()=>({}));
+  $('lastSync').textContent=new Date().toLocaleTimeString();
+  $('networkMessage').textContent=result.message||'Historia imetumwa server kikamilifu.';
+ }catch(e){$('networkMessage').textContent='Sync imeshindikana: '+e.message+'. API inahitaji POST /api/nath/history na CORS.';}
+ finally{$('syncNow').disabled=false;}
+}
+$('checkInternet').addEventListener('click',checkInternet);
+$('connectApi').addEventListener('click',connectApi);
+$('syncNow').addEventListener('click',syncHistory);
+window.addEventListener('online',()=>{checkInternet();});
+window.addEventListener('offline',()=>{setNet('Offline','#ffb36b');$('networkMessage').textContent='Muunganisho wa Internet umekatika.';setApi('Haipatikani','#ffb36b');$('syncNow').disabled=true;});
+checkInternet();
+connectApi();
+let history=[] , scanned=[], imageFile=null, previewUrl=null;
+try { const saved=JSON.parse(localStorage.getItem('nath_odds')||'[]'); history=Array.isArray(saved)?saved.map(Number).filter(v=>Number.isFinite(v)&&v>=1&&v<=100000).slice(-1000):[]; } catch(e) { history=[]; }
+function parseOdds(s){return (s.match(/\d+(?:[.,]\d+)?\s*x?/gi)||[]).map(v=>parseFloat(v.replace(',','.'))).filter(v=>Number.isFinite(v)&&v>=1&&v<=100000);}
+function save(){history=history.slice(-1000);localStorage.setItem('nath_odds',JSON.stringify(history));
+// BET CODE IMPORTER: direct decoding depends on each bookmaker's official share/API support.
+const bookmakerHelp={
+ 'BetPawa':'BetPawa','SportPesa':'SportPesa','Betika':'Betika','1xBet':'1xBet','M-Bet':'M-Bet','sportbet':'sportbet','helabet':'helabet','1win':'1win'
+};
+function safeOpenShareLink(raw){try{const u=new URL(raw);if(u.protocol!=='https:')return false;window.open(u.href,'_blank','noopener,noreferrer');return true;}catch(e){return false;}}
+$('tryImport').onclick=()=>{
+ const code=$('betCode').value.trim(),book=$('bookmaker').value;
+ if(!code){$('importStatus').textContent='Weka bet code au share link kwanza.';return;}
+ if(/^https:\/\//i.test(code)){
+  const opened=safeOpenShareLink(code);
+  $('importStatus').textContent=opened?'Share link imefunguliwa kwenye tab mpya. Ikiwa bookmaker anaonyesha mkeka, nakili maandishi yake au pakia screenshot hapa ili NATH-CODE ichambue.':'Link haikuweza kufunguliwa. Hakikisha ni HTTPS.';
+ }else{
+  $('importStatus').textContent=`Bookmaker: ${book}. Code imepokelewa, lakini hakuna API/deep-link rasmi iliyounganishwa hapa ya ku-decode code moja kwa moja. Ili kuepuka kuonyesha data za kubuni, fungua code kwenye app ya ${book}, kisha tumia share link, screenshot au nakili maandishi ya mkeka hapa chini.`;
+ }
+};
+$('clearSlip').onclick=()=>{$('betCode').value='';$('slipText').value='';$('slipReport').innerHTML='';$('importStatus').textContent='Mkeka umeondolewa kwenye uchambuzi huu.';$('slipImage').value='';};
+$('readSlipImage').onclick=async()=>{
+ const f=$('slipImage').files[0];if(!f){$('importStatus').textContent='Chagua screenshot kwanza.';return;}
+ if(!window.Tesseract){$('importStatus').textContent='OCR haijapakia. Hakikisha una intaneti kisha refresh.';return;}
+ $('importStatus').textContent='Inasoma screenshot ya mkeka...';
+ try{const out=await Tesseract.recognize(f,'eng');$('slipText').value=out.data.text;$('importStatus').textContent='OCR imemaliza. NATH-CODE inaanza kutafuta mechi zilizosomeka...';setTimeout(()=>document.getElementById('useSlipText')?.click(),250);}
+ catch(e){$('importStatus').textContent='Imeshindikana kusoma picha. Jaribu screenshot iliyo wazi zaidi.';}
+};
+function extractSlipOdds(text){
+ const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);let found=[];
+ for(const line of lines){
+  const matches=[...line.matchAll(/(?:^|\s)([1-9]\d?\.\d{2,3})(?=\s|$)/g)];
+  if(matches.length){const v=Number(matches[matches.length-1][1]);if(v>=1.01&&v<=1000)found.push({line,odd:v});}
+ }
+ if(!found.length){const all=[...text.matchAll(/\b([1-9]\d?\.\d{2,3})\b/g)];found=all.map(m=>({line:'Chaguo lililosomwa kutoka kwenye maandishi',odd:Number(m[1])})).filter(x=>x.odd>=1.01&&x.odd<=1000);}
+ return found;
+}
+$('analyzeSlip').onclick=()=>{
+ const raw=$('slipText').value.trim(),report=$('slipReport');if(!raw){report.innerHTML='<p class="warn">Bandika maandishi ya mkeka au soma screenshot kwanza.</p>';return;}
+ const legs=extractSlipOdds(raw);if(!legs.length){report.innerHTML='<p class="warn">Sijaona odds za decimal zinazotambulika. Hakiki maandishi au andika odds kwa muundo kama 1.85.</p>';return;}
+ const combined=legs.reduce((a,x)=>a*x.odd,1),p=legs.reduce((a,x)=>a*(1/x.odd),1);
+ report.innerHTML=`<div class="stats"><div class="stat"><b>${legs.length}</b><small>Odds zilizotambuliwa</small></div><div class="stat"><b>${combined.toFixed(2)}</b><small>Combined odds (makadirio)</small></div><div class="stat"><b>${(p*100).toFixed(2)}%</b><small>Raw implied chance*</small></div></div><div style="margin-top:12px"><strong>Chaguo zilizosomeka — hakiki usahihi:</strong>${legs.map((x,i)=>`<div class="leg"><strong>Leg ${i+1} · ${x.odd.toFixed(2)}</strong><div class="muted">${escapeHtml(x.line)}</div><span class="pill">Implied: ${(100/x.odd).toFixed(1)}%</span></div>`).join('')}</div><p class="muted">*Hesabu ya pamoja ni kuzidisha implied probabilities za kila odd. Si model ya matokeo ya mechi; odds zina margin ya bookmaker, na legs zinaweza kutegemeana. NATH-CODE haijathibitisha majina ya mechi au market kutoka code hii.</p>`;
+};
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+render();if(history.length>=10)analyzeHistory();}
+function render(){
+ $('count').textContent=history.length;
+ $('average').textContent=history.length?(history.reduce((a,b)=>a+b,0)/history.length).toFixed(2)+'x':'—';
+ let sorted=[...history].sort((a,b)=>a-b);
+ $('median').textContent=sorted.length?(sorted.length%2?sorted[(sorted.length-1)/2]:((sorted[sorted.length/2-1]+sorted[sorted.length/2])/2)).toFixed(2)+'x':'—';
+ $('odds').innerHTML=history.slice(-100).map(v=>`<span class="chip">${v.toFixed(2)}x</span>`).join('');
+}
+$('add').onclick=()=>{let a=parseOdds($('manual').value);if(!a.length){alert('Sijaona odds sahihi.');return;}history.push(...a);$('manual').value='';save();};
+$('clear').onclick=()=>{if(confirm('Una uhakika unataka kufuta historia yote?')){history=[];localStorage.removeItem('nath_odds');render();$('range').textContent='—';$('explain').textContent='Weka odds ili kuchambua.';$('low').textContent='—';$('high').textContent='—';$('n').textContent='0';$('stddev').textContent='—';$('q10').textContent='—';$('q90').textContent='—';$('probabilityTable').textContent='Bonyeza CHAMBUA NA TOA RANGE.';$('frequencyTable').textContent='Hakuna analysis bado.';$('theoryTable').textContent='Hii ni reference ya kinadharia tu.';}};
+function removeImage(){imageFile=null;scanned=[];if(previewUrl){URL.revokeObjectURL(previewUrl);previewUrl=null;} $('preview').removeAttribute('src');$('previewWrap').classList.add('hidden');$('camera').value='';$('gallery').value='';$('scan').disabled=true;$('addOcr').disabled=true;$('ocrText').value='';$('ocrText').classList.add('hidden');$('status').textContent='Picha imeondolewa.';}
+function chooseFile(f){if(!f)return;if(f.size>10*1024*1024){$('status').textContent='Picha ni kubwa kuliko 10 MB. Chagua picha ndogo.';return;}removeImage();imageFile=f;previewUrl=URL.createObjectURL(f);$('preview').src=previewUrl;$('previewWrap').classList.remove('hidden');$('scan').disabled=false;$('status').textContent='Picha tayari. Bonyeza SOMA PICHA (OCR).';$('ocrText').classList.add('hidden');$('addOcr').disabled=true;}
+$('camera').onchange=e=>chooseFile(e.target.files[0]);$('gallery').onchange=e=>chooseFile(e.target.files[0]);$('removeImage').onclick=removeImage;
+$('scan').onclick=async()=>{
+ if(!imageFile)return;
+ if(!window.Tesseract){$('status').textContent='OCR library haijapakia. Hakikisha una intaneti kisha refresh.';return;}
+ $('scan').disabled=true;$('status').textContent='Inasoma picha... subiri kidogo.';
+ try{const r=await Tesseract.recognize(imageFile,'eng',{logger:m=>{if(m.status)$('status').textContent=m.status+(m.progress?' '+Math.round(m.progress*100)+'%':'');}});
+ $('ocrText').value=r.data.text;$('ocrText').classList.remove('hidden');
+ scanned=parseOdds(r.data.text);$('addOcr').disabled=!scanned.length;
+ $('status').textContent=scanned.length?`Nimeona odds ${scanned.length}. Kagua maandishi hapa chini kabla ya kuongeza.`:'Sijaweza kutambua odds. Jaribu picha iliyo wazi zaidi.';
+ }catch(e){$('status').textContent='Imeshindikana kusoma picha. Jaribu tena.';}finally{$('scan').disabled=false;}
+};
+$('addOcr').onclick=()=>{let checked=parseOdds($('ocrText').value);if(!checked.length){alert('Hakuna odds sahihi.');return;}history.push(...checked);scanned=[];save();$('addOcr').disabled=true;$('status').textContent=`Odds ${checked.length} zimeongezwa kwenye historia.`;};
+function quantile(a,q){
+ let p=(a.length-1)*q,lo=Math.floor(p),hi=Math.ceil(p);
+ return a[lo]+(a[hi]-a[lo])*(p-lo);
+}
+function wilson(k,n){
+ const z=1.96,p=k/n,d=1+z*z/n;
+ const c=(p+z*z/(2*n))/d;
+ const m=z*Math.sqrt((p*(1-p)/n)+(z*z/(4*n*n)))/d;
+ return [Math.max(0,c-m),Math.min(1,c+m)];
+}
+function pct(v){return (v*100).toFixed(2)+'%';}
+function table(rows){
+ return '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><tbody>'+
+ rows.map((r,i)=>'<tr>'+r.map(c=>`<td style="padding:8px 6px;border-bottom:1px solid #24465b;${i===0?'font-weight:800;color:#62c8ff':''}">${c}</td>`).join('')+'</tr>').join('')+
+ '</tbody></table></div>';
+}
+function analyzeHistory(){
+ const data=history.slice(-1000);
+ if(data.length<10){
+  $('explain').textContent=`Ongeza angalau odds 10. Kwa sasa una rounds ${data.length}. Mfumo utachambua hadi rounds 1,000 za mwisho.`;
+  ['range','low','high','n','stddev','q10','q90','recentRange','trendState','sampleState'].forEach(id=>$(id).textContent='—');
+  $('n').textContent=data.length;
+  return;
+ }
+ const sorted=[...data].sort((x,y)=>x-y),n=data.length;
+ const recent=data.slice(-Math.min(50,n));
+ const prior=data.slice(Math.max(0,n-recent.length*2),n-recent.length);
+ const recentSorted=[...recent].sort((x,y)=>x-y);
+ const q=(arr,v)=>quantile(arr,v);
+ const overall={p10:q(sorted,.10),p25:q(sorted,.25),p50:q(sorted,.50),p75:q(sorted,.75),p90:q(sorted,.90)};
+ const r={p10:q(recentSorted,.10),p25:q(recentSorted,.25),p50:q(recentSorted,.50),p75:q(recentSorted,.75),p90:q(recentSorted,.90)};
+ // Blend long-run distribution with the recent sample, while retaining all decimal odds.
+ const blend=(key)=>overall[key]*.65+r[key]*.35;
+ const p10=blend('p10'),p25=blend('p25'),p50=blend('p50'),p75=blend('p75'),p90=blend('p90');
+ const mean=data.reduce((s,x)=>s+x,0)/n;
+ const variance=n>1?data.reduce((s,x)=>s+(x-mean)**2,0)/(n-1):0;
+ const sd=Math.sqrt(variance);
+ const avg=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:0;
+ const recentAvg=avg(recent),priorAvg=avg(prior);
+ let trend='Imetulia';
+ if(prior.length){const delta=(recentAvg-priorAvg)/Math.max(priorAvg,1)*100;trend=delta>10?'Juu':delta< -10?'Chini':'Imetulia';}
+ const quality=n<30?'Ndogo':n<100?'Wastani':'Nzuri';
+ $('range').textContent=p10.toFixed(2)+'x – '+p90.toFixed(2)+'x';
+ $('low').textContent=p25.toFixed(2)+'x'; $('high').textContent=p75.toFixed(2)+'x'; $('n').textContent=n;
+ $('stddev').textContent=sd.toFixed(3); $('q10').textContent=overall.p10.toFixed(2)+'x'; $('q90').textContent=overall.p90.toFixed(2)+'x';
+ $('recentRange').textContent=r.p10.toFixed(2)+'–'+r.p90.toFixed(2)+'x';
+ $('trendState').textContent=trend; $('sampleState').textContent=quality;
+ $('explain').textContent=`Range iliyochanganywa: 65% historia ya rounds ${n} na 35% rounds ${recent.length} za karibuni. Wide range ${p10.toFixed(2)}x–${p90.toFixed(2)}x; central range ${p25.toFixed(2)}x–${p75.toFixed(2)}x. Median ${p50.toFixed(2)}x. Wastani wa karibuni ${recentAvg.toFixed(2)}x dhidi ya ${prior.length?priorAvg.toFixed(2)+'x':'hakuna kipindi cha kulinganisha'}. Hii ni takwimu ya kihistoria, si uhakika wa round inayofuata.`;
+
+ const thresholds=[1.5,2,3,5,10,20,50,100];
+ let pRows=[['Target','Hits','Observed','95% Wilson interval']];
+ thresholds.forEach(t=>{const k=data.filter(x=>x>=t).length,[l,h]=wilson(k,n);pRows.push([t.toFixed(2)+'x',k,pct(k/n),pct(l)+'–'+pct(h)]);});
+ $('probabilityTable').innerHTML=table(pRows);
+ const bins=[[1,1.5,'1.00x–1.49x'],[1.5,2,'1.50x–1.99x'],[2,3,'2.00x–2.99x'],[3,5,'3.00x–4.99x'],[5,10,'5.00x–9.99x'],[10,20,'10.00x–19.99x'],[20,50,'20.00x–49.99x'],[50,Infinity,'50.00x+']];
+ let fRows=[['Range','Count','Share']];
+ bins.forEach(([lo,hi,label])=>{const k=data.filter(x=>x>=lo&&x<hi).length;fRows.push([label,k,pct(k/n)]);});
+ $('frequencyTable').innerHTML=table(fRows);
+ let tRows=[['Target','97% RTP theoretical reference']];
+ thresholds.forEach(t=>tRows.push([t.toFixed(2)+'x',pct(Math.min(1,.97/t))]));
+ $('theoryTable').innerHTML=table(tRows);
+}
+$('analyze').onclick=analyzeHistory;
+$('export').onclick=()=>{if(!history.length){alert('Hakuna historia ya kupakua.');return;}const csv='round,multiplier\n'+history.map((v,i)=>(i+1)+','+v.toFixed(2)).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='nath-code-history.csv';a.click();URL.revokeObjectURL(url);};
+
+// BET CODE IMPORTER: direct decoding depends on each bookmaker's official share/API support.
+const bookmakerHelp={
+ 'BetPawa':'BetPawa','SportPesa':'SportPesa','Betika':'Betika','1xBet':'1xBet','M-Bet':'M-Bet','sportbet':'sportbet','helabet':'helabet','1win':'1win'
+};
+function safeOpenShareLink(raw){try{const u=new URL(raw);if(u.protocol!=='https:')return false;window.open(u.href,'_blank','noopener,noreferrer');return true;}catch(e){return false;}}
+$('tryImport').onclick=()=>{
+ const code=$('betCode').value.trim(),book=$('bookmaker').value;
+ if(!code){$('importStatus').textContent='Weka bet code au share link kwanza.';return;}
+ if(/^https:\/\//i.test(code)){
+  const opened=safeOpenShareLink(code);
+  $('importStatus').textContent=opened?'Share link imefunguliwa kwenye tab mpya. Ikiwa bookmaker anaonyesha mkeka, nakili maandishi yake au pakia screenshot hapa ili NATH-CODE ichambue.':'Link haikuweza kufunguliwa. Hakikisha ni HTTPS.';
+ }else{
+  $('importStatus').textContent=`Bookmaker: ${book}. Code imepokelewa, lakini hakuna API/deep-link rasmi iliyounganishwa hapa ya ku-decode code moja kwa moja. Ili kuepuka kuonyesha data za kubuni, fungua code kwenye app ya ${book}, kisha tumia share link, screenshot au nakili maandishi ya mkeka hapa chini.`;
+ }
+};
+$('clearSlip').onclick=()=>{$('betCode').value='';$('slipText').value='';$('slipReport').innerHTML='';$('importStatus').textContent='Mkeka umeondolewa kwenye uchambuzi huu.';$('slipImage').value='';};
+$('readSlipImage').onclick=async()=>{
+ const f=$('slipImage').files[0];if(!f){$('importStatus').textContent='Chagua screenshot kwanza.';return;}
+ if(!window.Tesseract){$('importStatus').textContent='OCR haijapakia. Hakikisha una intaneti kisha refresh.';return;}
+ $('importStatus').textContent='Inasoma screenshot ya mkeka...';
+ try{const out=await Tesseract.recognize(f,'eng');$('slipText').value=out.data.text;$('importStatus').textContent='OCR imemaliza. Hakiki maandishi na odds kabla ya kubonyeza CHAMBUA MKeka.';}
+ catch(e){$('importStatus').textContent='Imeshindikana kusoma picha. Jaribu screenshot iliyo wazi zaidi.';}
+};
+function extractSlipOdds(text){
+ const lines=text.split(/\n+/).map(x=>x.trim()).filter(Boolean);let found=[];
+ for(const line of lines){
+  const matches=[...line.matchAll(/(?:^|\s)([1-9]\d?\.\d{2,3})(?=\s|$)/g)];
+  if(matches.length){const v=Number(matches[matches.length-1][1]);if(v>=1.01&&v<=1000)found.push({line,odd:v});}
+ }
+ if(!found.length){const all=[...text.matchAll(/\b([1-9]\d?\.\d{2,3})\b/g)];found=all.map(m=>({line:'Chaguo lililosomwa kutoka kwenye maandishi',odd:Number(m[1])})).filter(x=>x.odd>=1.01&&x.odd<=1000);}
+ return found;
+}
+$('analyzeSlip').onclick=()=>{
+ const raw=$('slipText').value.trim(),report=$('slipReport');if(!raw){report.innerHTML='<p class="warn">Bandika maandishi ya mkeka au soma screenshot kwanza.</p>';return;}
+ const legs=extractSlipOdds(raw);if(!legs.length){report.innerHTML='<p class="warn">Sijaona odds za decimal zinazotambulika. Hakiki maandishi au andika odds kwa muundo kama 1.85.</p>';return;}
+ const combined=legs.reduce((a,x)=>a*x.odd,1),p=legs.reduce((a,x)=>a*(1/x.odd),1);
+ report.innerHTML=`<div class="stats"><div class="stat"><b>${legs.length}</b><small>Odds zilizotambuliwa</small></div><div class="stat"><b>${combined.toFixed(2)}</b><small>Combined odds (makadirio)</small></div><div class="stat"><b>${(p*100).toFixed(2)}%</b><small>Raw implied chance*</small></div></div><div style="margin-top:12px"><strong>Chaguo zilizosomeka — hakiki usahihi:</strong>${legs.map((x,i)=>`<div class="leg"><strong>Leg ${i+1} · ${x.odd.toFixed(2)}</strong><div class="muted">${escapeHtml(x.line)}</div><span class="pill">Implied: ${(100/x.odd).toFixed(1)}%</span></div>`).join('')}</div><p class="muted">*Hesabu ya pamoja ni kuzidisha implied probabilities za kila odd. Si model ya matokeo ya mechi; odds zina margin ya bookmaker, na legs zinaweza kutegemeana. NATH-CODE haijathibitisha majina ya mechi au market kutoka code hii.</p>`;
+};
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+
+render();if(history.length>=10)analyzeHistory();
+
+// FLOATING PLAY MODE: opens as an overlay on the SAME screen; no page navigation.
+(()=>{
+ const source=document.getElementById('playSource'),customWrap=document.getElementById('customPlayWrap');
+ const frameWrap=document.getElementById('playFrameWrap'),frame=document.getElementById('playFrame'),status=document.getElementById('playFrameStatus');
+ const overlay=document.createElement('div');overlay.id='floatingOverlay';overlay.innerHTML=`<div class="float-card"><div class="float-head"><strong>▣ NATH-CODE · FLOATING PLAY</strong><div class="float-actions"><button class="btn secondary" id="floatExternal">TAB MPYA</button><button class="btn secondary" id="floatClose">FUNGA ✕</button></div></div><div id="floatFrameSlot"></div><div class="play-note">NATH-CODE inabaki nyuma ya dirisha hili. Ikiwa bookmaker amekataa iframe, tumia TAB MPYA au Android Split Screen.</div></div>`;
+ document.body.appendChild(overlay);overlay.querySelector('#floatFrameSlot').appendChild(frameWrap);
+ function selectedUrl(){let raw=source.value==='custom'?document.getElementById('customPlayUrl').value.trim():source.value;try{const u=new URL(raw);return u.protocol==='https:'?u.href:'';}catch(e){return '';}}
+ function open(){const url=selectedUrl();if(!url){status.textContent='Weka link sahihi ya HTTPS kwanza.';overlay.classList.add('open');return;}overlay.classList.add('open');status.textContent='Inafungua '+url+' ndani ya dirisha la sasa...';frame.src=url;}
+ function close(){overlay.classList.remove('open');frame.src='about:blank';}
+ source.addEventListener('change',()=>customWrap.classList.toggle('hidden',source.value!=='custom'));
+ document.getElementById('openMini').addEventListener('click',open);
+ document.getElementById('openExternal').addEventListener('click',()=>{const url=selectedUrl();if(!url){alert('Weka link sahihi ya HTTPS kwanza.');return;}window.open(url,'_blank','noopener,noreferrer');});
+ document.getElementById('closeMini').addEventListener('click',close);
+ overlay.querySelector('#floatClose').addEventListener('click',close);
+ overlay.querySelector('#floatExternal').addEventListener('click',()=>{const url=selectedUrl();if(url)window.open(url,'_blank','noopener,noreferrer');});
+ overlay.addEventListener('click',e=>{if(e.target===overlay)close()});
+ frame.addEventListener('load',()=>{if(frame.src!=='about:blank')status.textContent='Ombi limetumwa. Ikiwa ukurasa ni mtupu au umekataa, tovuti imezuia iframe; tumia TAB MPYA.';});
+})();
+
+</script>
+<script>
+/* App shell, private CPU calculations and persistent audit log */
+(()=>{
+ const main=document.querySelector('main'); if(!main)return;
+ const header=main.querySelector('header');
+ const panels=[...main.querySelectorAll(':scope > section.panel')];
+ const math=document.getElementById('mathReport'); if(math){math.dataset.page='engine';math.style.display='none'}
+ const content=document.createElement('div');content.id='appContent';
+ const dash=document.createElement('section');dash.id='homeDashboard';dash.innerHTML=`
+  <div class="welcome"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap"><div><h1>NATH-CODE</h1><p>Intelligence at a glance.</p></div><span id="cpuBadge">● CPU ENGINE READY</span></div></div>
+  <div class="stats" style="margin-bottom:14px"><div class="stat"><b id="dashRounds">0</b><small>Aviator rounds</small></div><div class="stat"><b id="dashRange">—</b><small>Last analysis range</small></div><div class="stat"><b id="dashLogs">0</b><small>System log entries</small></div></div>
+  <div class="home-grid">
+   <button class="home-tile" data-go="aviator"><span class="tile-icon">✈️</span><b>Aviator Analysis</b></button>
+   <button class="home-tile" data-go="mikeka"><span class="tile-icon">⚽</span><b>Football Intelligence</b></button>
+   <button class="home-tile" data-go="play"><span class="tile-icon">▣</span><b>Floating Play Mode</b></button>
+   <button class="home-tile" data-go="settings"><span class="tile-icon">☁️</span><b>Internet & Connections</b></button>
+   <button class="home-tile" data-go="logs"><span class="tile-icon">▤</span><b>System Activity Log</b></button>
+   <button class="home-tile" data-go="engine"><span class="tile-icon">⚙️</span><b>CPU Engine Status</b></button>
+  </div>`;
+ const logPanel=document.createElement('section');logPanel.className='panel';logPanel.id='systemLog';logPanel.dataset.page='logs';logPanel.innerHTML=`<h2>System Activity Log</h2><p class="muted">Rekodi za ndani za NATH-CODE. Taarifa nyeti kama password hazirekodiwi.</p><div class="actions"><button class="btn secondary" id="exportLogs">PAKUA LOG (CSV)</button><button class="btn secondary" id="clearLogs">SAFISHA LOG</button></div><div class="log-list" id="logList"></div><p class="log-note">Log huhifadhiwa kwenye kifaa hiki. Cloud log inahitaji server/API iliyounganishwa.</p>`;
+ const footballPanel=document.createElement('section');footballPanel.className='panel';footballPanel.id='footballCentre';footballPanel.dataset.page='mikeka';footballPanel.innerHTML=`
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap"><div><h2 style="margin:0">FOOTBALL INTELLIGENCE</h2><p class="muted" style="margin:5px 0 0">Tafuta timu, linganisha historia na pata makadirio ya masoko ya mechi</p></div><span class="pill" id="footballConnection">API NOT CONNECTED</span></div>
+  <div class="betgrid" style="margin-top:16px"><label class="muted">TIMU YA NYUMBANI<input id="homeTeamSearch" placeholder="Mfano: Arsenal" autocomplete="off"></label><label class="muted">TIMU YA UGENINI<input id="awayTeamSearch" placeholder="Mfano: Chelsea" autocomplete="off"></label></div>
+  <div class="actions"><button class="btn" id="footballAnalyze">ANALYZE MATCH</button><button class="btn secondary" id="useSlipText">CHAMBUA KUTOKA SCREENSHOT TEXT</button></div>
+  <div id="footballStatus" class="muted" role="status" style="margin:12px 0">Andika majina ya timu mbili. Mfumo utatafuta timu na data kupitia server.</div>
+  <div id="footballResult"></div>
+  <div class="divider" style="height:1px;background:#293952;margin:16px 0"></div>
+  <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><b>Data provider</b><span class="muted">API-Football · H2H · Recent form · Goals · Team logos</span></div>
+  <p class="muted warn" style="margin-top:8px">Ili data za moja kwa moja zipatikane, msimamizi wa server lazima aweke API key ya API-Football kwenye mazingira ya server (NATH_FOOTBALL_KEY). Usiweke key kwenye ukurasa huu. Bila key, mfumo hautabuni takwimu wala logo.</p>`;
+ const pages={
+  aviator:[panels[1],panels[2],panels[4],panels[5],panels[6]],
+  mikeka:[document.getElementById('betImporter'),footballPanel],
+  play:[document.getElementById('floatingPlay')],
+  settings:[document.getElementById('internetPanel')]
+ };
+ panels.forEach(p=>{if(p)p.dataset.page='none'});
+ pages.aviator.forEach(p=>p.dataset.page='aviator');
+ pages.mikeka.forEach(p=>p.dataset.page='mikeka');
+ pages.play.forEach(p=>p.dataset.page='play');
+ pages.settings.forEach(p=>p.dataset.page='settings');
+ const enginePanel=document.createElement('section');enginePanel.className='panel';enginePanel.id='engineStatusPanel';enginePanel.dataset.page='engine';enginePanel.innerHTML=`<h2>CPU Engine Status</h2><div class="stats"><div class="stat"><b id="engineState">READY</b><small>Engine state</small></div><div class="stat"><b>LOCAL</b><small>Execution mode</small></div><div class="stat"><b>ON</b><small>Audit log</small></div></div><p class="muted" style="margin-top:12px">Injini huchakata takwimu, percentiles, frequency, probability intervals na trend kwa ndani. Jedwali la hesabu za kina limefichwa kwenye matumizi ya kawaida ili app ibaki safi; matokeo muhimu huonekana kwenye Aviator Analysis.</p><p class="muted warn">CPU engine haipati matokeo ya siri ya bookmaker na haiwezi kufanya rounds za Aviator zitabirike.</p>`;
+ header.insertAdjacentElement('afterend',content);content.append(dash,...panels.filter(p=>p!==math),footballPanel,logPanel,enginePanel);
+ const footer=main.querySelector('footer'); if(footer)content.append(footer);
+ const nav=document.createElement('nav');nav.className='app-nav';nav.innerHTML=`<div class="nav-title">MENU</div><button class="nav-btn active" data-page="home" data-icon="⌂">Home</button><button class="nav-btn" data-page="aviator" data-icon="✈">Aviator</button><button class="nav-btn" data-page="mikeka" data-icon="⚽">Mikeka</button><button class="nav-btn" data-page="play" data-icon="▣">Play</button><button class="nav-btn" data-page="logs" data-icon="▤">Logs</button><button class="nav-btn" data-page="settings" data-icon="⚙">Settings</button>`;
+ content.before(nav);
+ const storeKey='nath_code_system_log_v1';let logs=[];try{logs=JSON.parse(localStorage.getItem(storeKey)||'[]')}catch(e){}
+ const save=()=>{try{localStorage.setItem(storeKey,JSON.stringify(logs.slice(-500)))}catch(e){}};
+ const log=(type,message)=>{logs.push({at:new Date().toISOString(),type,message});logs=logs.slice(-500);save();renderLogs();updateDash()};
+ const renderLogs=()=>{const box=document.getElementById('logList');if(!box)return;box.innerHTML=logs.length?logs.slice().reverse().map(x=>`<div class="log-entry"><time>${new Date(x.at).toLocaleString()}</time><strong>${esc(x.type)}</strong><span>${esc(x.message)}</span></div>`).join(''):'<div class="log-empty">Bado hakuna matukio yaliyorekodiwa.</div>'};
+ const esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function updateDash(){const count=document.getElementById('count'),range=document.getElementById('range');document.getElementById('dashRounds').textContent=count?.textContent||'0';document.getElementById('dashRange').textContent=range?.textContent||'—';document.getElementById('dashLogs').textContent=logs.length}
+ function show(page){nav.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));dash.style.display=page==='home'?'block':'none';content.querySelectorAll('.panel[data-page]').forEach(p=>p.classList.toggle('page-visible',p.dataset.page===page));if(page==='engine'&&math)math.style.display='none';updateDash();log('NAVIGATION','Opened '+page+' workspace')}
+ nav.addEventListener('click',e=>{const b=e.target.closest('[data-page]');if(b)show(b.dataset.page)});
+ content.addEventListener('click',e=>{const b=e.target.closest('[data-go]');if(b)show(b.dataset.go)});
+ document.getElementById('exportLogs').onclick=()=>{const csv='timestamp,type,message\n'+logs.map(x=>[x.at,x.type,x.message].map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='nath-code-system-log.csv';a.click();URL.revokeObjectURL(a.href);log('EXPORT','System log exported as CSV')};
+ document.getElementById('clearLogs').onclick=()=>{if(confirm('Una uhakika unataka kufuta system log?')){logs=[];save();renderLogs();updateDash()}};
+ // Record important controls only; never record typed values, bet codes, or credentials.
+ document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el||['exportLogs','clearLogs'].includes(el.id))return;const label=(el.textContent||el.id||'Action').trim().replace(/\s+/g,' ').slice(0,90);if(label)log('ACTION',label)});
+ const originalAnalyze=window.analyzeHistory;
+ document.addEventListener('click',e=>{if(e.target?.id==='analyze'||e.target?.id==='add'||e.target?.id==='addOcr'||e.target?.id==='scan'||e.target?.id==='analyzeSlip'){document.getElementById('engineState').textContent='PROCESSING';setTimeout(()=>{document.getElementById('engineState').textContent='READY';updateDash()},250)}});
+ window.nathLog=log;log('SYSTEM','NATH-CODE v1.9 server-analysis + same-screen floating mode initialized');renderLogs();updateDash();show('home');
+})();
+</script>
+
+<script>
+/* v1.9 SERVER-SIDE ANALYSIS ROUTER. No local fallback: results must come from configured server. */
+(()=>{
+ const $=id=>document.getElementById(id); if(!$('analyze'))return;
+ $('analyze').onclick=async()=>{
+  const base=(localStorage.getItem('nath_api_base')||'').replace(/\/$/,'');
+  if(!base){$('explain').textContent='Unganisha server kwanza kwenye Settings. Uchambuzi haujafanyika kwenye simu.';return;}
+  if(history.length<10){$('explain').textContent='Ingiza angalau odds 10 kabla ya kutuma uchambuzi server.';return;}
+  const min=$('rangeMinInput').value.trim(),max=$('rangeMaxInput').value.trim();
+  if((min&&!max)||(!min&&max)||(min&&max&&(Number(min)<1||Number(max)<=Number(min)))){$('explain').textContent='Weka range ya chini na ya juu kwa usahihi, au acha sehemu zote wazi.';return;}
+  $('explain').textContent='Inatuma data kwa server. Hesabu zote za analysis zinafanyika server-side...';$('range').textContent='Inachambua...';
+  try{
+   const response=await fetch(base+'/api/nath/analyze',{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({odds:history.slice(-1000),rangeMin:min?Number(min):null,rangeMax:max?Number(max):null,requestedAt:new Date().toISOString()})});
+   if(!response.ok)throw new Error('HTTP '+response.status);
+   const result=await response.json(); if(!result||!result.range)throw new Error('Muundo wa majibu ya server si sahihi');
+   $('range').textContent=result.range.wide||'—';$('low').textContent=result.range.centralLow||'—';$('high').textContent=result.range.centralHigh||'—';$('n').textContent=result.sampleSize??history.length;
+   $('recentRange').textContent=result.recentRange||'—';$('trendState').textContent=result.trend||'—';$('sampleState').textContent=result.quality||'—';
+   $('stddev').textContent=result.stdDev??'—';$('q10').textContent=result.q10??'—';$('q90').textContent=result.q90??'—';
+   $('explain').textContent=(result.summary||'Uchambuzi umekamilika server-side.')+' · Chanzo: SERVER';
+   if(result.requestedRange){$('explain').textContent+=' · Ulinganisho wa range uliyoomba: '+result.requestedRange.coverage+'% ya data ya historia iliangukia ndani ya mipaka hiyo.';}
+   if(typeof window.nathLog==='function')window.nathLog('SERVER_ANALYSIS','Analysis completed on server; sample='+result.sampleSize);
+  }catch(err){$('range').textContent='—';$('explain').textContent='Server analysis haikufanikiwa: '+err.message+'. Hakikisha backend v1.9 imewekwa na endpoint /api/nath/analyze inapatikana. Hakuna local prediction iliyotumika.';if(typeof window.nathLog==='function')window.nathLog('SERVER_ERROR',err.message);}
+ };
+})();
+</script>
+
+<script>
+/* NATH-CODE Football Intelligence client. All provider requests go through the configured backend. */
+(()=>{
+ const $=id=>document.getElementById(id);const home=$('homeTeamSearch'),away=$('awayTeamSearch'),btn=$('footballAnalyze'),status=$('footballStatus'),out=$('footballResult');
+ if(!home||!away||!btn)return;
+ const base=()=> (localStorage.getItem('nath_api_base')||'').replace(/\/$/,'');
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function render(d){
+  const a=d.teams.home,b=d.teams.away,p=d.probabilities,m=d.markets;
+  const team=(t)=>`<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1"><img src="${esc(t.logo||'')}" alt="" onerror="this.style.display='none'" style="width:46px;height:46px;object-fit:contain;background:#fff;border-radius:12px;padding:4px"><div><b>${esc(t.name)}</b><div class="muted" style="font-size:11px">${esc(t.country||'')}</div></div></div>`;
+  const market=(label,value)=>`<div class="stat"><b>${esc(value)}</b><small>${esc(label)}</small></div>`;
+  out.innerHTML=`<div class="panel" style="margin-top:14px;background:#101b2d;border-color:#314765"><div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">${team(a)}<b style="color:#91a6c7">VS</b>${team(b)}</div><div class="muted" style="margin-top:12px">${esc(d.fixture?.league||'Head-to-head analysis')} · ${esc(d.fixture?.date||'')}</div><div class="divider" style="height:1px;background:#30415b;margin:14px 0"></div><b>WIN PROBABILITY</b><div class="stats" style="margin-top:10px">${market(a.name+' win',p.home+'%')}${market('Draw',p.draw+'%')}${market(b.name+' win',p.away+'%')}</div><div style="margin-top:16px"><b>BETTING MARKETS</b><div class="stats" style="margin-top:10px">${market('1X',m.doubleChance.homeOrDraw+'%')}${market('X2',m.doubleChance.awayOrDraw+'%')}${market('12',m.doubleChance.noDraw+'%')}${market('Over 1.5',m.over15+'%')}${market('Over 2.5',m.over25+'%')}${market('Under 2.5',m.under25+'%')}${market('BTTS Yes',m.bttsYes+'%')}${market('BTTS No',m.bttsNo+'%')}</div></div><div style="margin-top:16px"><b>HEAD TO HEAD</b><p class="muted">${esc(d.h2h.summary)}</p><div class="stats">${market('Matches',d.h2h.played)}${market(a.name+' wins',d.h2h.homeWins)}${market('Draws',d.h2h.draws)}${market(b.name+' wins',d.h2h.awayWins)}</div></div><div style="margin-top:16px"><b>RECENT FORM</b><p class="muted">${esc(a.name)}: ${esc(d.form.home)} · ${esc(b.name)}: ${esc(d.form.away)}</p><p class="muted">Average goals: ${esc(d.goals.home)} - ${esc(d.goals.away)}</p></div><div style="margin-top:14px;padding:12px;border-radius:12px;background:#182943"><b>TOP SUGGESTIONS</b><p style="margin:8px 0">${d.suggestions.map(esc).join(' · ')}</p><div class="muted" style="font-size:11px">${esc(d.disclaimer)}</div></div></div>`;
+ }
+ async function analyze(h,a){
+  if(!base()){status.textContent='Unganisha kwanza SERVER API kwenye Settings. Football analysis inahitaji backend online.';return;}
+  if(!h||!a){status.textContent='Andika majina ya timu zote mbili.';return;}
+  btn.disabled=true;btn.textContent='INACHAMBUA...';status.textContent='Inatafuta timu, logo, head-to-head na recent form...';out.innerHTML='';
+  try{const r=await fetch(base()+'/api/football/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({homeTeam:h,awayTeam:a})});const data=await r.json();if(!r.ok)throw new Error(data.error||('HTTP '+r.status));render(data);status.textContent='Uchambuzi umekamilika. Chanzo: Football data provider kupitia NATH-CODE server.';if(window.nathLog)window.nathLog('FOOTBALL_ANALYSIS',h+' vs '+a);}
+  catch(e){status.textContent='Imeshindikana: '+e.message;out.innerHTML='<div class="muted warn">Hakuna matokeo yaliyobuniwa. Hakikisha API-Football key imewekwa kwenye server na server ina internet.</div>';}
+  finally{btn.disabled=false;btn.textContent='ANALYZE MATCH';}
+ }
+ btn.addEventListener('click',()=>analyze(home.value.trim(),away.value.trim()));
+ [home,away].forEach(el=>el.addEventListener('change',()=>{if(home.value.trim()&&away.value.trim())analyze(home.value.trim(),away.value.trim());}));
+ [home,away].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter'&&home.value.trim()&&away.value.trim())analyze(home.value.trim(),away.value.trim());}));
+ $('slipImage')?.addEventListener('change',()=>{if($('slipImage').files?.length)$('readSlipImage')?.click();});
+ $('useSlipText')?.addEventListener('click',()=>{const t=$('slipText')?.value||'';const m=t.match(/([^\n|,;]+?)\s+(?:vs\.?|v\.?|-\s*)\s+([^\n|,;]+?)(?:\s+-|\s+\d|$)/i);if(!m){status.textContent='Sijaweza kutambua timu mbili. Hakiki OCR kwenye maandishi ya mkeka, kisha andika majina hapo juu.';return;}home.value=m[1].trim();away.value=m[2].trim();analyze(home.value,away.value);});
+})();
+</script>
+
+<script>
+/* Biometric readiness: WebAuthn requires HTTPS and server-generated, verified challenges. */
+(()=>{
+ const badge=document.getElementById('bioSupport'),btn=document.getElementById('bioSetup'),msg=document.getElementById('bioMessage');
+ if(!badge||!btn||!msg)return;
+ const supported=!!(window.PublicKeyCredential&&navigator.credentials&&navigator.credentials.create&&navigator.credentials.get);
+ badge.textContent=supported?'DEVICE SUPPORTED':'NOT AVAILABLE';
+ badge.style.color=supported?'#76e4c0':'#ffbd8a';
+ btn.addEventListener('click',async()=>{
+  if(!supported){msg.textContent='Kifaa au browser hii haitoi WebAuthn. Jaribu browser ya kisasa inayotumia fingerprint au face unlock.';return;}
+  if(!window.isSecureContext){msg.textContent='Biometrics zinahitaji HTTPS na domain salama. Fungua NATH-CODE kupitia HTTPS.';return;}
+  msg.textContent='Kifaa kinaunga mkono biometrics. Ili kuwasha kuingia kwa fingerprint/Face ID, tunahitaji kuongeza WebAuthn registration na authentication endpoints kwenye server pamoja na akaunti ya mtumiaji. Hakuna usajili wa biometrics uliofanyika bado.';
+ });
+})();
+</script>
+
+</body></html>

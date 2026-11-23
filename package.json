@@ -1,18 +1,11 @@
-
 {
   "name": "nath-code-server",
   "version": "2.1.0",
-  "description": "NATH-CODE v2.1 Football and Aviation Intelligence Server",
+  "private": true,
+  "description": "NATH-CODE v2.1 unified Football and Aviator analysis server with hybrid local brain",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "multer": "^1.4.5-lts.1",
-    "tesseract.js": "^5.1.1"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18"
