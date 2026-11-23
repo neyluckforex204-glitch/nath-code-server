@@ -1,0 +1,31 @@
+NATH-CODE v2.1 — FOOTBALL INTELLIGENCE SETUP
+
+FILES
+- NATH-CODE-v2.0-Premium-UI.html : app interface
+- NATH-CODE-server-v2.1.js       : Node.js backend
+
+REQUIREMENTS
+- Node.js 18 or newer
+- An API-Football API key from https://www.api-football.com/
+- HTTPS deployment for production
+
+START SERVER (Linux/macOS)
+export PORT=8080
+export NATH_FOOTBALL_KEY='YOUR_API_FOOTBALL_KEY'
+# Optional: protect backend requests with a shared token only after the client auth flow is configured.
+# export NATH_API_TOKEN='YOUR_PRIVATE_TOKEN'
+node NATH-CODE-server-v2.1.js
+
+The server health endpoint is GET /health.
+The football analysis endpoint is POST /api/football/analyze with JSON:
+{"homeTeam":"Arsenal","awayTeam":"Chelsea"}
+
+The HTML app calls the server URL saved in Settings > SERVER API URL.
+Football team search, team logos, last five matches, head-to-head records and probability estimates are fetched server-side from API-Football. The provider key must remain on the server and must never be pasted into the HTML file.
+
+IMPORTANT
+- This is an integration-ready build; it is not yet hosted online.
+- Live football analysis will work only after the backend is deployed with NATH_FOOTBALL_KEY configured and the app's Server API URL points to it.
+- This version estimates 1X2, double chance, goals totals and BTTS from available recent-match and H2H data. It does not yet model confirmed lineups, injuries, bookmaker prices or every market.
+- If a competition/team lacks sufficient data, the server returns an error rather than inventing statistics.
+- Probabilities are estimates, not guarantees or betting advice.
