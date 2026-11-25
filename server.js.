@@ -1,0 +1,190 @@
+
+const http = require("http");
+const { URL } = require("url");
+
+const PORT = process.env.PORT || 10000;
+const API_KEY =
+  process.env.NATH_FOOTBALL_KEY ||
+  process.env.API_FOOTBALL_KEY;
+
+const API_BASE = "https://v3.football.api-sports.io";
+
+async function football(endpoint, params = {}) {
+  if (!API_KEY) {
+    throw new Error("FOOTBALL_API_KEY_NOT_CONFIGURED");
+  }
+
+  const url = new URL(API_BASE + endpoint);
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      url.searchParams.set(key, String(value));
+    }
+  });
+
+  const response = await fetch(url, {
+    headers: { "x-apisports-key": API_KEY },
+    signal: AbortSignal.timeout(15000)
+  });
+
+  const data = await response.json();
+
+  if (!response.ok || data.errors && Object.keys(data.errors).length) {
+    throw new Error(JSON.stringify(data.errors || data));
+  }
+
+  return data;
+}
+
+function send(res, status, data) {
+  res.writeHead(status, {
+    "Content-Type": "application/json",
+    "Access-Control-Allow-Origin": "*"
+  });
+  res.end(JSON.stringify(data));
+}
+
+async function handle(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const p = url.pathname;
+  const q = url.searchParams;
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type"
+    });
+    return res.end();
+  }
+
+  if (p === "/" || p === "/health") {
+    return send(res, 200, {
+      system: "NATH-CODE",
+      version: "2.1",
+      status: "ONLINE",
+      footballProvider: API_KEY ? "configured" : "not_configured"
+    });
+  }
+
+  try {
+    let result;
+
+    if (p === "/api/football/fixtures") {
+      const date = q.get("date") ||
+        new Date().toLocaleDateString("en-CA", {
+          timeZone: "Africa/Dar_es_Salaam"
+        });
+
+      result = await football("/fixtures", {
+        date,
+        league: q.get("league"),
+        season: q.get("season")
+      });
+    }
+
+    else if (p === "/api/football/teams") {
+      const search = q.get("search");
+
+      if (!search) {
+        return send(res, 400, { error: "Team search required" });
+      }
+
+      result = await football("/teams", {
+        search,
+        season: q.get("season")
+      });
+    }
+
+    else if (p === "/api/football/recent") {
+      const team = q.get("team");
+
+      if (!team) {
+        return send(res, 400, { error: "Team ID required" });
+      }
+
+      result = await football("/fixtures", {
+        team,
+        last: q.get("last") || 5,
+        season: q.get("season")
+      });
+    }
+
+    else if (p === "/api/football/h2h") {
+      const ids = q.get("ids");
+
+      if (!ids || !/^\d+-\d+$/.test(ids)) {
+        return send(res, 400, {
+          error: "Provide two team IDs, e.g. ids=33-34"
+        });
+      }
+
+      result = await football("/fixtures/headtohead", {
+        h2h: ids,
+        last: q.get("last") || 10
+      });
+    }
+
+    else if (p === "/api/football/standings") {
+      const league = q.get("league");
+      const season = q.get("season");
+
+      if (!league || !season) {
+        return send(res, 400, {
+          error: "League ID and season required"
+        });
+      }
+
+      result = await football("/standings", {
+        league,
+        season
+      });
+    }
+
+    else if (p === "/api/football/statistics") {
+      const fixture = q.get("fixture");
+
+      if (!fixture) {
+        return send(res, 400, {
+          error: "Fixture ID required"
+        });
+      }
+
+      result = await football("/fixtures/statistics", {
+        fixture
+      });
+    }
+
+    else {
+      return send(res, 404, {
+        error: "NATH-CODE endpoint not found"
+      });
+    }
+
+    return send(res, 200, {
+      system: "NATH-CODE",
+      provider: "API-FOOTBALL",
+      success: true,
+      results: result.results,
+      data: result.response,
+      errors: result.errors
+    });
+
+  } catch (error) {
+    const missingKey = error.message ===
+      "FOOTBALL_API_KEY_NOT_CONFIGURED";
+
+    return send(res, missingKey ? 503 : 502, {
+      system: "NATH-CODE",
+      success: false,
+      error: missingKey
+        ? "Football API key is missing"
+        : "Football API request failed",
+      details: error.message
+    });
+  }
+}
+
+http.createServer(handle).listen(PORT, () => {
+  console.log("NATH-CODE v2.1 running on port " + PORT);
+});
